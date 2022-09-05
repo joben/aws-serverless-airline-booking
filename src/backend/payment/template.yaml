@@ -6,14 +6,24 @@ Parameters:
     Type: String
     Description: Environment stage or git branch
 
+  LogRetentionInDays:
+    Type: Number
+    Default: 14
+    Description: CloudWatch Logs retention period
+
+  SharedLibsLayer:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: Project shared libraries Lambda Layer ARN
+
 Globals:
   Function:
-    Timeout: 5
+    Timeout: 10
     Tracing: Active
     MemorySize: 512
     Environment:
       Variables:
         POWERTOOLS_SERVICE_NAME: payment
+        POWERTOOLS_METRICS_NAMESPACE: ServerlessAirline
         LOG_LEVEL: INFO
 
 Resources:
@@ -22,7 +32,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:us-east-1:375983427419:applications/api-lambda-stripe-charge
-        SemanticVersion: 4.4.0
+        SemanticVersion: 4.4.2
       Parameters:
         EnableInstantCapture: "false"
         SSMParameterPath: !Sub ${Stage}/service/payment/stripe/secretKey
@@ -30,11 +40,12 @@ Resources:
   CollectPayment:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub Airline-CollectPayment-${Stage}
+      FunctionName: !Sub ServerlessAirline-CollectPayment-${Stage}
       Handler: collect.lambda_handler
       Runtime: python3.7
       CodeUri: src/collect-payment
-      Timeout: 10
+      Layers:
+        - !Ref SharedLibsLayer
       Environment:
         Variables:
           PAYMENT_API_URL: !GetAtt StripePaymentApplication.Outputs.CaptureApiUrl
@@ -43,15 +54,28 @@ Resources:
   RefundPayment:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub Airline-RefundPayment-${Stage}
+      FunctionName: !Sub ServerlessAirline-RefundPayment-${Stage}
       Handler: refund.lambda_handler
       CodeUri: src/refund-payment
       Runtime: python3.7
-      Timeout: 10
+      Layers:
+        - !Ref SharedLibsLayer
       Environment:
         Variables:
           PAYMENT_API_URL: !GetAtt StripePaymentApplication.Outputs.RefundApiUrl
           STAGE: !Ref Stage
+
+  RefundPaymentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${RefundPayment}"
+      RetentionInDays: !Ref LogRetentionInDays
+
+  CollectPaymentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CollectPayment}"
+      RetentionInDays: !Ref LogRetentionInDays
 
   CollectPaymentParameter:
     Type: "AWS::SSM::Parameter"
@@ -68,6 +92,27 @@ Resources:
       Description: Refund Payment Lambda ARN
       Type: String
       Value: !Sub ${RefundPayment.Arn}
+
+  PaymentCaptureEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${Stage}/service/payment/api/capture/url"
+      Type: String
+      Value: !Sub ${StripePaymentApplication.Outputs.CaptureApiUrl}
+
+  PaymentChargeEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${Stage}/service/payment/api/charge/url"
+      Type: String
+      Value: !Sub ${StripePaymentApplication.Outputs.ChargeApiUrl}
+
+  PaymentRefundEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${Stage}/service/payment/api/refund/url"
+      Type: String
+      Value: !Sub ${StripePaymentApplication.Outputs.RefundApiUrl}
 
 Outputs:
   CollectPaymentFunction:
@@ -87,5 +132,5 @@ Outputs:
     Description: Payment Endpoint for collecting payments
 
   RefundApiUrl:
-    Value: !Sub ${StripePaymentApplication.Outputs.ChargeApiUrl}
+    Value: !Sub ${StripePaymentApplication.Outputs.RefundApiUrl}
     Description: Payment Endpoint for refunding payments

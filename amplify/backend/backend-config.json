@@ -1,27 +1,36 @@
 {
-	"auth": {
-		"cognitoa7d29d9d": {
-			"service": "Cognito",
-			"providerPlugin": "awscloudformation",
-			"dependsOn": []
-		}
-	},
-	"api": {
-		"awsserverlessairline": {
-			"service": "AppSync",
-			"providerPlugin": "awscloudformation",
-			"output": {
-				"authConfig": {
-					"additionalAuthenticationProviders": [],
-					"defaultAuthentication": {
-						"authenticationType": "AMAZON_COGNITO_USER_POOLS",
-						"userPoolConfig": {
-							"userPoolId": "authcognitoa7d29d9d"
-						}
-					}
-				}
-			}
-		}
-	},
-	"function": {}
+  "auth": {
+    "awsserverlessairline44ea6421": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
+  },
+  "api": {
+    "awsserverlessairline": {
+      "service": "AppSync",
+      "providerPlugin": "awscloudformation",
+      "output": {
+        "authConfig": {
+          "additionalAuthenticationProviders": [
+            {
+              "authenticationType": "API_KEY",
+              "apiKeyConfig": {
+                "apiKeyExpirationDays": 1,
+                "apiKeyExpirationDate": "2022-03-30T06:59:41.199Z",
+                "description": "sample api key"
+              }
+            }
+          ],
+          "defaultAuthentication": {
+            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
+            "userPoolConfig": {
+              "userPoolId": "authawsserverlessairline44ea6421"
+            }
+          }
+        }
+      }
+    }
+  }
 }

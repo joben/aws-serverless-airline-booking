@@ -18,94 +18,52 @@ init: ##=> Install OS deps and dev tools
 	$(info [*] Bootstrapping CI system...)
 	@$(MAKE) _install_os_packages
 
-outputs: ##=> Fetch SAM stack outputs
-	$(MAKE) outputs.payment
-
-outputs.payment: ##=> Converts Payments output stack to Vue env variables
-	 aws cloudformation describe-stacks --stack-name $${STACK_NAME}-payment-$${AWS_BRANCH} --query 'Stacks[0].Outputs[?OutputKey==`PaymentChargeUrl`].OutputValue' | jq -r '.[] | "VUE_APP_PaymentChargeUrl" + "=\"" + (.|tostring) + "\""' >> src/frontend/.env
-	 cat src/frontend/.env
-
 deploy: ##=> Deploy services
 	$(info [*] Deploying...)
+	$(MAKE) deploy.shared-lambda-layers
 	$(MAKE) deploy.payment
 	$(MAKE) deploy.booking
 	$(MAKE) deploy.loyalty
-	$(MAKE) deploy.log-processing
+## Enable the deploy.perftest if you need to deploy the performance test stack
+#	$(MAKE) deploy.perftest 
 
 delete: ##=> Delete services
 	$(MAKE) delete.booking
 	$(MAKE) delete.payment
 	$(MAKE) delete.loyalty
-	$(MAKE) delete.log-processing
+	$(MAKE) delete.shared-lambda-layers
+## Enable the delete.perftest if you need to delete the performance test stack
+#	$(MAKE) delete.perftest
 
 delete.booking: ##=> Delete booking service
-	aws cloudformation delete-stack --stack-name $${STACK_NAME}-booking-$${AWS_BRANCH}
+	$(MAKE) -C src/backend/booking delete
 
 delete.payment: ##=> Delete payment service
-	aws cloudformation delete-stack --stack-name $${STACK_NAME}-payment-$${AWS_BRANCH}
+	$(MAKE) -C src/backend/payment delete
 
-delete.loyalty: ##=> Delete booking service
-	aws cloudformation delete-stack --stack-name $${STACK_NAME}-loyalty-$${AWS_BRANCH}
+delete.loyalty: ##=> Delete loyalty service
+	$(MAKE) -C src/backend/loyalty delete
 
-delete.log-processing:
-	aws cloudformation delete-stack --stack-name $${STACK_NAME}-log-processing-$${AWS_BRANCH}
+delete.perftest:
+	$(MAKE) -C src/perf-tests delete
+
+delete.shared-lambda-layers: ##=> Delete shared Lambda layers stack
+	$(MAKE) -C src/backend/shared/libs delete
 
 deploy.booking: ##=> Deploy booking service using SAM
-	$(info [*] Packaging and deploying Booking service...)
-	cd src/backend/booking && \
-		sam build && \
-		sam package \
-			--s3-bucket $${DEPLOYMENT_BUCKET_NAME} \
-			--output-template-file packaged.yaml && \
-		sam deploy \
-			--template-file packaged.yaml \
-			--stack-name $${STACK_NAME}-booking-$${AWS_BRANCH} \
-			--capabilities CAPABILITY_IAM \
-			--parameter-overrides \
-				BookingTable=/$${AWS_BRANCH}/service/amplify/storage/table/booking \
-				FlightTable=/$${AWS_BRANCH}/service/amplify/storage/table/flight \
-				CollectPaymentFunction=/$${AWS_BRANCH}/service/payment/function/collect \
-				RefundPaymentFunction=/$${AWS_BRANCH}/service/payment/function/refund \
-				AppsyncApiId=/$${AWS_BRANCH}/service/amplify/api/id \
-				Stage=$${AWS_BRANCH}
+	$(MAKE) -C src/backend/booking deploy
 
 deploy.payment: ##=> Deploy payment service using SAM
-	$(info [*] Packaging and deploying Payment service...)
-	cd src/backend/payment && \
-		sam build && \
-		sam package \
-			--s3-bucket $${DEPLOYMENT_BUCKET_NAME} \
-			--output-template-file packaged.yaml && \
-		sam deploy \
-			--template-file packaged.yaml \
-			--stack-name $${STACK_NAME}-payment-$${AWS_BRANCH} \
-			--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
-			--parameter-overrides Stage=$${AWS_BRANCH}
+	$(MAKE) -C src/backend/payment deploy
 
 deploy.loyalty: ##=> Deploy loyalty service using SAM and TypeScript build
-	$(info [*] Packaging and deploying Loyalty service...)
-	cd src/backend/loyalty && \
-		npm install && \
-		npm run build && \
-		sam package \
-			--s3-bucket $${DEPLOYMENT_BUCKET_NAME} \
-			--output-template-file packaged.yaml && \
-		sam deploy \
-			--template-file packaged.yaml \
-			--stack-name $${STACK_NAME}-loyalty-$${AWS_BRANCH} \
-			--capabilities CAPABILITY_IAM \
-			--parameter-overrides \
-				BookingSNSTopic=/$${AWS_BRANCH}/service/booking/topic \
-				Stage=$${AWS_BRANCH} \
-				AppsyncApiId=$${GRAPHQL_API_ID}
+	$(MAKE) -C src/backend/loyalty deploy
 
-deploy.log-processing: ##=> Deploy Log Processing for CloudWatch Logs
-	$(info [*] Packaging and deploying Loyalty service...)
-	cd src/backend/log-processing && \
-		sam deploy \
-			--template-file template.yaml \
-			--stack-name $${STACK_NAME}-log-processing-$${AWS_BRANCH} \
-			--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND
+deploy.perftest: ##=> Deploying Gatling components for performance testing
+	$(MAKE) -C src/perf-tests deploy
+
+deploy.shared-lambda-layers: ##=> Deploy shared Lambda Layers using SAM
+	$(MAKE) -C src/backend/shared/libs deploy
 
 export.parameter:
 	$(info [+] Adding new parameter named "${NAME}")
@@ -124,6 +82,7 @@ _install_os_packages:
 	yum install jq -y
 	$(info [*] Upgrading Python SAM CLI and CloudFormation linter to the latest version...)
 	python3 -m pip install --upgrade --user cfn-lint aws-sam-cli
+	npm -g install aws-cdk
 
 define HELP_MESSAGE
 

@@ -27,7 +27,7 @@ type Flight
     ticketPrice: Int!
     ticketCurrency: String!
     flightNumber: Int!
-    seatAllocation: Int @deprecated(reason: "use seatCapacity instead. seatAllocation will be removed in the stable release.")
+    seatAllocation: Int # Disabling due to regression in amplify-cli 4.13.1: @deprecated(reason: "use seatCapacity instead. seatAllocation will be removed in the stable release.")
     seatCapacity: Int!
 }
 
@@ -37,7 +37,7 @@ type Flight
 type Booking 
     @model(subscriptions: null) 
     @auth(rules: [
-      {allow: owner, ownerField: "customer", identityField: "sub", operations: [read, update]},
+      {allow: owner, ownerField: "customer", identityField: "sub", operations: [read]},
       {allow: groups, groups: ["Admin"]}
     ])
     @key(name: "ByCustomerStatus", 
@@ -72,7 +72,8 @@ input CreateBookingInput {
 # Loyalty uses API authorization level
 # and loyalty owner is resolved at the resolver level using auth claims
 # to unlock admin use case, `customer/owner` field could be added
-type Loyalty {
+# NOTE: API key is used for e2e test from Loyalty backend only
+type Loyalty @aws_api_key {
     points: Int
     level: String
     remainingPoints: Int
@@ -83,5 +84,5 @@ type Mutation {
 }
 
 type Query {
-    getLoyalty(customer: String): Loyalty
+    getLoyalty(customer: String): Loyalty @aws_api_key
 }
