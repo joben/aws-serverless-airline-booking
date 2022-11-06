@@ -13,7 +13,7 @@
     "docs": "echo '[!!!] Looking for a replacement for esdoc due to CVEs' && exit 0"
   },
   "dependencies": {
-    "@aws-amplify/api": "^4.0.20",
+    "@aws-amplify/api": "^4.0.57",
     "@aws-amplify/auth": "^4.3.10",
     "@aws-amplify/core": "^4.3.2",
     "@aws-amplify/interactions": "^4.0.20",
