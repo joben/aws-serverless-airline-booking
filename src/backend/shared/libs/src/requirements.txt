@@ -1,3 +1,4 @@
 aws-lambda-powertools==1.0.1
 boto3==1.14.16
 requests==2.24.0
+urllib3>=1.26.17 # not directly required, pinned by Snyk to avoid a vulnerability
