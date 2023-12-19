@@ -19,7 +19,7 @@
     "@aws-amplify/interactions": "^4.0.20",
     "@aws-amplify/storage": "^4.4.3",
     "@aws-amplify/ui-components": "^1.9.0",
-    "@aws-amplify/ui-vue": "^1.1.14",
+    "@aws-amplify/ui-vue": "^2.0.0",
     "@quasar/extras": "^1.9.15",
     "axios": "^0.23.0",
     "core-js": "^3.18.3",
