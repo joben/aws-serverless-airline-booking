@@ -21,7 +21,7 @@
     "@aws-amplify/ui-components": "^1.9.0",
     "@aws-amplify/ui-vue": "^1.1.14",
     "@quasar/extras": "^1.9.15",
-    "axios": "^0.23.0",
+    "axios": "^1.6.3",
     "core-js": "^3.18.3",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.1.4",
