@@ -13,15 +13,15 @@
     "docs": "echo '[!!!] Looking for a replacement for esdoc due to CVEs' && exit 0"
   },
   "dependencies": {
-    "@aws-amplify/api": "^4.0.20",
+    "@aws-amplify/api": "^6.0.0",
     "@aws-amplify/auth": "^4.3.10",
     "@aws-amplify/core": "^4.3.2",
     "@aws-amplify/interactions": "^4.0.20",
-    "@aws-amplify/storage": "^4.4.3",
+    "@aws-amplify/storage": "^5.7.0",
     "@aws-amplify/ui-components": "^1.9.0",
     "@aws-amplify/ui-vue": "^1.1.14",
     "@quasar/extras": "^1.9.15",
-    "axios": "^0.23.0",
+    "axios": "^1.7.8",
     "core-js": "^3.18.3",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-prettier": "^3.1.4",
